@@ -7,6 +7,8 @@ import { formatTimestamp, formatAddress } from '../utils/formatters';
 import { trackEvent, trackError, AnalyticsEvents } from '../utils/analytics';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { formatFileSize, getFileIcon } from '../utils/attachments';
+import { useSessionKey } from '../providers/SessionKeyProvider';
+import { SessionExpirationModal } from './SessionExpirationModal';
 
 interface ChannelProps {
   channelId: string;
@@ -18,6 +20,7 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
   const currentAccount = useCurrentAccount();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isLoadingOlderRef = useRef(false);
+  const { sessionKey } = useSessionKey();
   const {
     currentChannel,
     messages,
@@ -36,10 +39,41 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
   const [messageText, setMessageText] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
+
+  // Check session expiration
+  const checkSessionExpiration = () => {
+    if (sessionKey && sessionKey.isExpired()) {
+      setIsSessionExpired(true);
+      return true;
+    }
+    setIsSessionExpired(false);
+    return false;
+  };
+
+  // Monitor session key changes
+  useEffect(() => {
+    if (sessionKey) {
+      // Check if expired when session key exists
+      if (sessionKey.isExpired()) {
+        setIsSessionExpired(true);
+      } else {
+        setIsSessionExpired(false);
+      }
+    } else {
+      // No session key means it's expired or not initialized
+      setIsSessionExpired(true);
+    }
+  }, [sessionKey]);
 
   // Fetch channel and messages on mount
   useEffect(() => {
     if (!isReady || !channelId) return;
+
+    // Check expiration before fetching
+    if (checkSessionExpiration()) {
+      return;
+    }
 
     // Track channel open event
     trackEvent(AnalyticsEvents.CHANNEL_OPENED, {
@@ -50,14 +84,14 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
 
     // Fetch channel and messages
     getChannelById(channelId).then(() => {
-      if (isMounted) {
+      if (isMounted && !checkSessionExpiration()) {
         fetchMessages(channelId);
       }
     });
 
     // Auto-refresh messages every 60 seconds (only fetch new messages, don't replace existing)
     const interval = setInterval(() => {
-      if (isMounted) {
+      if (isMounted && !checkSessionExpiration()) {
         fetchLatestMessages(channelId);
       }
     }, 60000);
@@ -68,7 +102,7 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
     };
     // Only re-run when channelId or isReady changes, not when functions change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, channelId]);
+  }, [isReady, channelId, sessionKey]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -82,6 +116,11 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check expiration before sending
+    if (checkSessionExpiration()) {
+      return;
+    }
 
     if ((!messageText.trim() && selectedFiles.length === 0) || isSendingMessage) {
       return;
@@ -126,6 +165,11 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
   };
 
   const handleLoadMore = () => {
+    // Check expiration before loading more
+    if (checkSessionExpiration()) {
+      return;
+    }
+
     if (messagesCursor && !isFetchingMessages) {
       isLoadingOlderRef.current = true;
       fetchMessages(channelId, messagesCursor);
@@ -147,12 +191,14 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
   }
 
   return (
-    <Card style={{ height: '600px', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
+    <>
+      <SessionExpirationModal isOpen={isSessionExpired} />
+      <Card style={{ height: '600px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        {/* Header */}
       <Box p="3" style={{ borderBottom: '1px solid var(--gray-a3)' }}>
         <Flex justify="between" align="center">
           <Flex gap="3" align="center">
-            <Button size="2" variant="soft" onClick={onBack}>
+            <Button size="2" variant="soft" onClick={onBack} disabled={isSessionExpired}>
               ← Back
             </Button>
             <Box>
@@ -191,7 +237,7 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
               size="2"
               variant="soft"
               onClick={handleLoadMore}
-              disabled={isFetchingMessages}
+              disabled={isFetchingMessages || isSessionExpired}
             >
               {isFetchingMessages ? 'Loading...' : 'Load older messages'}
             </Button>
@@ -307,14 +353,14 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
               multiple
               onChange={handleFileSelect}
               style={{ display: 'none' }}
-              disabled={isSendingMessage || !isReady}
+              disabled={isSendingMessage || !isReady || isSessionExpired}
             />
             <IconButton
               size="3"
               variant="soft"
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isSendingMessage || !isReady}
+              disabled={isSendingMessage || !isReady || isSessionExpired}
             >
               <FileIcon />
             </IconButton>
@@ -323,13 +369,13 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
               placeholder="Type a message..."
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              disabled={isSendingMessage || !isReady}
+              disabled={isSendingMessage || !isReady || isSessionExpired}
               style={{ flex: 1 }}
             />
             <Button
               size="3"
               type="submit"
-              disabled={(!messageText.trim() && selectedFiles.length === 0) || isSendingMessage || !isReady}
+              disabled={(!messageText.trim() && selectedFiles.length === 0) || isSendingMessage || !isReady || isSessionExpired}
             >
               {isSendingMessage ? 'Sending...' : 'Send'}
             </Button>
@@ -337,5 +383,6 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
         </form>
       </Box>
     </Card>
+    </>
   );
 }

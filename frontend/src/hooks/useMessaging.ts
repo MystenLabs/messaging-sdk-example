@@ -177,6 +177,12 @@ export const useMessaging = () => {
       return;
     }
 
+    // Check if session key is expired
+    if (!sessionKey || sessionKey.isExpired()) {
+      setChannelError('[fetchMessages] Session key expired. Please sign a new session key.');
+      return;
+    }
+
     const requestKey = `fetchMessages-${channelId}-${cursor ?? 'initial'}`;
     
     // Check if request is already in flight
@@ -223,13 +229,19 @@ export const useMessaging = () => {
       setIsFetchingMessages(false);
       inFlightRequests.current.delete(requestKey);
     }
-  }, [messagingClient, currentAccount]);
+  }, [messagingClient, currentAccount, sessionKey]);
 
   // Fetch only new messages since last poll (for auto-refresh, with deduplication)
   const fetchLatestMessages = useCallback(async (channelId: string) => {
     if (!messagingClient || !currentAccount || !pollingState || pollingState.channelId !== channelId) {
       // If no polling state, fall back to regular fetch
       return fetchMessages(channelId);
+    }
+
+    // Check if session key is expired
+    if (!sessionKey || sessionKey.isExpired()) {
+      setChannelError('[fetchLatestMessages] Session key expired. Please sign a new session key.');
+      return;
     }
 
     const requestKey = `fetchLatestMessages-${channelId}`;
@@ -284,7 +296,7 @@ export const useMessaging = () => {
     } finally {
       inFlightRequests.current.delete(requestKey);
     }
-  }, [messagingClient, currentAccount, pollingState, fetchMessages]);
+  }, [messagingClient, currentAccount, pollingState, fetchMessages, sessionKey]);
 
   // Get member cap for channel (with caching)
   const getMemberCapForChannel = useCallback(async (channelId: string) => {
@@ -349,6 +361,12 @@ export const useMessaging = () => {
       return null;
     }
 
+    // Check if session key is expired
+    if (!sessionKey || sessionKey.isExpired()) {
+      setChannelError('[sendMessage] Session key expired. Please sign a new session key.');
+      return null;
+    }
+
     setIsSendingMessage(true);
     setChannelError(null);
 
@@ -403,7 +421,7 @@ export const useMessaging = () => {
     } finally {
       setIsSendingMessage(false);
     }
-  }, [messagingClient, currentAccount, signAndExecute, suiClient, getMemberCapForChannel, getEncryptedKeyForChannel, fetchMessages, fetchLatestMessages, pollingState]);
+  }, [messagingClient, currentAccount, signAndExecute, suiClient, getMemberCapForChannel, getEncryptedKeyForChannel, fetchMessages, fetchLatestMessages, pollingState, sessionKey]);
 
   // Fetch channels when client is ready (initial fetch only)
   // Auto-refresh is now handled by components that need it
