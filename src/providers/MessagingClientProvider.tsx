@@ -36,13 +36,6 @@ export const MessagingClientProvider = ({
       // Create the extended client with SealClient and MessagingClient
       const extendedClient = new SuiClient({
         url: "https://fullnode.testnet.sui.io:443",
-        mvr: {
-          overrides: {
-            packages: {
-              '@local-pkg/sui-stack-messaging': "0x984960ebddd75c15c6d38355ac462621db0ffc7d6647214c802cd3b685e1af3d", // Or provide your own package ID
-            },
-          },
-        },
       })
         .$extend(
           SealClient.asClientExtension({
