@@ -89,12 +89,12 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
       }
     });
 
-    // Auto-refresh messages every 60 seconds (only fetch new messages, don't replace existing)
+    // Auto-refresh messages every 10 seconds (only fetch new messages, don't replace existing)
     const interval = setInterval(() => {
       if (isMounted && !checkSessionExpiration()) {
         fetchLatestMessages(channelId);
       }
-    }, 60000);
+    }, 10000);
 
     return () => {
       isMounted = false;
