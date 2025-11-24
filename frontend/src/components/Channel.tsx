@@ -30,7 +30,6 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
     sendMessage,
     isFetchingMessages,
     isSendingMessage,
-    messagesCursor,
     hasMoreMessages,
     channelError,
     isReady,
@@ -66,7 +65,7 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
     }
   }, [sessionKey]);
 
-  // Fetch channel and messages on mount
+  // Fetch channel on mount
   useEffect(() => {
     if (!isReady || !channelId) return;
 
@@ -80,29 +79,44 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
       channel_id: channelId,
     });
 
-    let isMounted = true;
-
-    // Fetch channel and messages
-    getChannelById(channelId).then(() => {
-      if (isMounted && !checkSessionExpiration()) {
-        fetchMessages(channelId);
-      }
-    });
-
-    // Auto-refresh messages every 10 seconds (only fetch new messages, don't replace existing)
-    const interval = setInterval(() => {
-      if (isMounted && !checkSessionExpiration()) {
-        fetchLatestMessages(channelId);
-      }
-    }, 10000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    // Fetch channel object (messages will be fetched in separate effect when channel loads)
+    getChannelById(channelId);
+    
     // Only re-run when channelId or isReady changes, not when functions change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, channelId, sessionKey]);
+
+  // Fetch messages when current channel is loaded
+  useEffect(() => {
+    if (!currentChannel || currentChannel.id.id !== channelId) {
+      return;
+    }
+
+    if (checkSessionExpiration()) {
+      return;
+    }
+
+    // Fetch initial messages for this channel
+    fetchMessages();
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChannel, channelId]);
+
+  // // Auto-refresh messages every 10 seconds
+  // useEffect(() => {
+  //   if (!currentChannel || !isReady) return;
+
+  //   const interval = setInterval(() => {
+  //     if (!checkSessionExpiration()) {
+  //       fetchLatestMessages();
+  //     }
+  //   }, 10000);
+
+  //   return () => {
+  //     clearInterval(interval);
+  //   };
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [currentChannel, isReady]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -127,7 +141,7 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
     }
 
     const attachments = selectedFiles.length > 0 ? selectedFiles : undefined;
-    const result = await sendMessage(channelId, messageText, attachments);
+    const result = await sendMessage(messageText, attachments);
     if (result) {
       setMessageText(''); // Clear input on success
       setSelectedFiles([]); // Clear selected files
@@ -170,9 +184,9 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
       return;
     }
 
-    if (messagesCursor && !isFetchingMessages) {
+    if (hasMoreMessages && !isFetchingMessages) {
       isLoadingOlderRef.current = true;
-      fetchMessages(channelId, messagesCursor);
+      fetchMessages(true);
       // Track loading more messages
       trackEvent(AnalyticsEvents.MESSAGES_LOADED_MORE, {
         channel_id: channelId,
