@@ -17,6 +17,7 @@ export const useMessaging = () => {
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [isFetchingChannels, setIsFetchingChannels] = useState(false);
   const [channelError, setChannelError] = useState<string | null>(null);
+  const [hasMoreChannels, setHasMoreChannels] = useState(false);
 
   // Current channel state
   const [currentChannel, setCurrentChannel] = useState<DecryptedChannelObject | null>(null);
@@ -33,6 +34,8 @@ export const useMessaging = () => {
   
   // Track in-flight requests to prevent duplicate simultaneous calls
   const inFlightRequests = useRef<Set<string>>(new Set());
+  // Ref to track cursor without causing callback recreation
+  const channelsCursorRef = useRef<string | null>(null);
 
   // Create channel function
   const createChannel = useCallback(async (recipientAddresses: string[]) => {
@@ -106,12 +109,13 @@ export const useMessaging = () => {
   }, [messagingClient, currentAccount, signAndExecute, suiClient]);
 
   // Fetch channels function (with deduplication)
-  const fetchChannels = useCallback(async () => {
+  const fetchChannels = useCallback(async (loadMore: boolean = false) => {
     if (!messagingClient || !currentAccount) {
       return;
     }
 
-    const requestKey = `fetchChannels-${currentAccount.address}`;
+    const cursor = loadMore ? channelsCursorRef.current : null;
+    const requestKey = `fetchChannels-${currentAccount.address}-${cursor ?? 'initial'}`;
     
     // Check if request is already in flight
     if (inFlightRequests.current.has(requestKey)) {
@@ -125,13 +129,23 @@ export const useMessaging = () => {
     try {
       const response = await messagingClient.getChannelObjectsByAddress({
         address: currentAccount.address,
+        cursor: cursor,
         limit: 10,
       });
 
-      setChannels(response.channelObjects);
-      // Invalidate member cap cache when channels are refreshed
-      setMemberCapCache(new Map());
-      setMembershipsCache(null);
+      if (loadMore) {
+        // Append new channels to existing ones
+        setChannels(prev => [...prev, ...response.channelObjects]);
+      } else {
+        // Replace all channels (refresh)
+        setChannels(response.channelObjects);
+        // Invalidate member cap cache when channels are refreshed
+        setMemberCapCache(new Map());
+        setMembershipsCache(null);
+      }
+
+      channelsCursorRef.current = response.cursor;
+      setHasMoreChannels(response.hasNextPage);
     } catch (err) {
       const errorMsg = err instanceof Error ? `[fetchChannels] ${err.message}` : '[fetchChannels] Failed to fetch channels';
       setChannelError(errorMsg);
@@ -427,6 +441,7 @@ export const useMessaging = () => {
     isCreatingChannel,
     isFetchingChannels,
     channelError,
+    hasMoreChannels,
 
     // Current channel functions and state
     currentChannel,

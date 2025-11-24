@@ -5,7 +5,7 @@ import { formatTimestamp, formatAddress } from '../utils/formatters';
 import { trackEvent, AnalyticsEvents } from '../utils/analytics';
 
 export function ChannelList() {
-  const { channels, isFetchingChannels, fetchChannels, isReady } = useMessaging();
+  const { channels, isFetchingChannels, fetchChannels, isReady, hasMoreChannels } = useMessaging();
 
   useEffect(() => {
     console.log('Channels updated:', channels);
@@ -60,11 +60,7 @@ export function ChannelList() {
           </Box>
         ) : (
           <Flex direction="column" gap="2">
-            {channels.sort((a, b) => {
-              const aTime = a.last_message ? Number(a.last_message.createdAtMs) : Number(a.created_at_ms);
-              const bTime = b.last_message ? Number(b.last_message.createdAtMs) : Number(b.created_at_ms);
-              return bTime - aTime;
-            }).map((channel) => (
+            {channels.map((channel) => (
               <Box
                 key={channel.id.id}
                 p="3"
@@ -156,6 +152,17 @@ export function ChannelList() {
               </Box>
             ))}
           </Flex>
+        )}
+
+        {hasMoreChannels && (
+          <Button
+            size="2"
+            variant="soft"
+            onClick={() => fetchChannels(true)}
+            disabled={isFetchingChannels || !isReady}
+          >
+            {isFetchingChannels ? 'Loading...' : 'Load More'}
+          </Button>
         )}
 
         {channels.length > 0 && (
