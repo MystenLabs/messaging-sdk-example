@@ -102,21 +102,21 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChannel, channelId]);
 
-  // // Auto-refresh messages every 10 seconds
-  // useEffect(() => {
-  //   if (!currentChannel || !isReady) return;
+  // Auto-refresh messages every 5 seconds
+  useEffect(() => {
+    if (!currentChannel || !isReady) return;
 
-  //   const interval = setInterval(() => {
-  //     if (!checkSessionExpiration()) {
-  //       fetchLatestMessages();
-  //     }
-  //   }, 10000);
+    const interval = setInterval(() => {
+      if (!checkSessionExpiration()) {
+        fetchLatestMessages();
+      }
+    }, 5000);
 
-  //   return () => {
-  //     clearInterval(interval);
-  //   };
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [currentChannel, isReady]);
+    return () => {
+      clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChannel, isReady]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
