@@ -7,11 +7,18 @@
     "build": "tsc",
     "start": "node dist/index.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@mysten/bcs": "^1.9.2",
+    "@mysten/messaging": "^0.0.3",
+    "@mysten/seal": "^0.9.3",
+    "@mysten/sui": "^1.44.0",
+    "@mysten/walrus": "^0.8.3",
+    "dotenv": "^16.4.5",
+    "openai": "^4.28.0"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.9.2"
   }
 }
-
