@@ -5,11 +5,7 @@ import { useCurrentAccount } from '@mysten/dapp-kit';
 import { isValidSuiAddress } from '@mysten/sui/utils';
 import { trackEvent, trackError, AnalyticsEvents } from '../utils/analytics';
 
-interface CreateChannelProps {
-  onInteraction?: () => void;
-}
-
-export function CreateChannel({ onInteraction }: CreateChannelProps) {
+export function CreateChannel() {
   const { createChannel, isCreatingChannel, channelError, isReady } = useMessaging();
   const currentAccount = useCurrentAccount();
   const [recipientAddresses, setRecipientAddresses] = useState('');
@@ -69,11 +65,6 @@ export function CreateChannel({ onInteraction }: CreateChannelProps) {
         member_count: addresses.length + 1,
         channel_id: result.channelId,
       });
-
-      // Track interaction for feedback
-      if (onInteraction) {
-        onInteraction();
-      }
 
       // Clear success message after 5 seconds
       setTimeout(() => setSuccessMessage(null), 5000);

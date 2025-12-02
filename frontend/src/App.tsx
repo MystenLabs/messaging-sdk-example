@@ -7,14 +7,10 @@ import { MessagingClientProvider } from "./providers/MessagingClientProvider";
 import { CreateChannel } from "./components/CreateChannel";
 import { ChannelList } from "./components/ChannelList";
 import { Channel } from "./components/Channel";
-import { FeedbackCard } from "./components/FeedbackCard";
-import { FeedbackBubble } from "./components/FeedbackBubble";
 import { useState, useEffect } from "react";
 import { isValidSuiObjectId } from "@mysten/sui/utils";
 import { MessagingStatus } from "./components/MessagingStatus";
 import { trackEvent, AnalyticsEvents } from "./utils/analytics";
-import { useFeedback } from "./hooks/useFeedback";
-import { FeedbackService } from "./services/feedbackService";
 
 function AppContent() {
   const currentAccount = useCurrentAccount();
@@ -23,19 +19,6 @@ function AppContent() {
     const hash = window.location.hash.slice(1);
     return isValidSuiObjectId(hash) ? hash : null;
   });
-
-  const {
-    isOpen: isFeedbackOpen,
-    isSending: isFeedbackSending,
-    error: feedbackError,
-    showBubble,
-    shouldShowPrompt,
-    openFeedback,
-    closeFeedback,
-    submitFeedback,
-    handleOptOut,
-    trackInteraction,
-  } = useFeedback();
 
   // Track wallet connection changes
   useEffect(() => {
@@ -59,15 +42,6 @@ function AppContent() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
-
-  // Show feedback prompt automatically when threshold is reached
-  useEffect(() => {
-    if (shouldShowPrompt && !isFeedbackOpen && currentAccount) {
-      openFeedback();
-      // Mark the card as shown so it won't auto-popup again
-      FeedbackService.markCardShown();
-    }
-  }, [shouldShowPrompt, isFeedbackOpen, currentAccount, openFeedback]);
 
   return (
     <>
@@ -138,12 +112,11 @@ function AppContent() {
                   window.location.hash = '';
                   setChannelId(null);
                 }}
-                onInteraction={trackInteraction}
               />
             ) : (
               <Flex direction="column" gap="4">
                 <MessagingStatus />
-                <CreateChannel onInteraction={trackInteraction} />
+                <CreateChannel />
                 <ChannelList />
               </Flex>
             )
@@ -152,24 +125,6 @@ function AppContent() {
           )}
         </Container>
       </Container>
-
-      {/* Feedback Components */}
-      {isFeedbackOpen && currentAccount && (
-        <FeedbackCard
-          onSubmit={submitFeedback}
-          onClose={closeFeedback}
-          onOptOut={handleOptOut}
-          isSubmitting={isFeedbackSending}
-          error={feedbackError}
-        />
-      )}
-
-      {showBubble && !isFeedbackOpen && currentAccount && (
-        <FeedbackBubble
-          onClick={openFeedback}
-          isVisible={true}
-        />
-      )}
     </>
   );
 }

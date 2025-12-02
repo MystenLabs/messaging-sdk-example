@@ -13,10 +13,9 @@ import { SessionExpirationModal } from './SessionExpirationModal';
 interface ChannelProps {
   channelId: string;
   onBack: () => void;
-  onInteraction?: () => void;
 }
 
-export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
+export function Channel({ channelId, onBack }: ChannelProps) {
   const currentAccount = useCurrentAccount();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isLoadingOlderRef = useRef(false);
@@ -151,10 +150,6 @@ export function Channel({ channelId, onBack, onInteraction }: ChannelProps) {
         message_length: messageText.length,
         has_attachments: attachments ? attachments.length : 0,
       });
-      // Track interaction for feedback
-      if (onInteraction) {
-        onInteraction();
-      }
     } else if (channelError) {
       // Track message sending error
       trackError('message_send', channelError, {
