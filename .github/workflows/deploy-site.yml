@@ -12,20 +12,17 @@ jobs:
       contents: write # for push operations and committing back
       pull-requests: write
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "24"
+          node-version: "latest"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 9
+          version: 'latest'
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -36,7 +33,7 @@ jobs:
         run: pnpm run build
 
       - name: Deploy to Walrus
-        uses: MystenLabs/walrus-sites/.github/actions/deploy@main
+        uses: MystenLabs/deploy-walrus-site-action@v1
         with:
           SUI_ADDRESS: ${{ vars.SUI_ADDRESS }}
           SUI_KEYSTORE: ${{ secrets.SUI_KEYSTORE }}
