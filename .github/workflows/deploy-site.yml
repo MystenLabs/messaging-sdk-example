@@ -33,7 +33,7 @@ jobs:
         run: pnpm run build
 
       - name: Deploy to Walrus
-        uses: MystenLabs/deploy-walrus-site-action@v1
+        uses: MystenLabs/walrus-sites-github-actions/deploy@v1
         with:
           SUI_ADDRESS: ${{ vars.SUI_ADDRESS }}
           SUI_KEYSTORE: ${{ secrets.SUI_KEYSTORE }}
