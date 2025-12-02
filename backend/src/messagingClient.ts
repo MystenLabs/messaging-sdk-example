@@ -9,32 +9,28 @@ import { SUI_RPC_URL, SEAL_SERVERS, WALRUS_CONFIG } from './config.js';
  */
 export function createMessagingClient(sessionKey: SessionKey): SuiStackMessagingClient {
   try {
-    // Create the base SuiClient
-    const suiClient = new SuiClient({
-      url: SUI_RPC_URL,
-    });
-
-    // Extend with SealClient extension
-    const extendedClient = suiClient
-      .$extend(
-        SealClient.asClientExtension({
-          serverConfigs: SEAL_SERVERS.map((id) => ({
-            objectId: id,
-            weight: 1,
-          })),
-        })
-      )
-      .$extend(
-        SuiStackMessagingClient.experimental_asClientExtension({
-          storage: (client: SuiClient) =>
-            new WalrusStorageAdapter(client, {
-              publisher: WALRUS_CONFIG.publisher,
-              aggregator: WALRUS_CONFIG.aggregator,
-              epochs: WALRUS_CONFIG.epochs,
-            }),
-          sessionKey,
-        })
-      );
+    const extendedClient = new SuiClient({
+        url: "https://fullnode.testnet.sui.io:443",
+      })
+        .$extend(
+          SealClient.asClientExtension({
+            serverConfigs: SEAL_SERVERS.map((id) => ({
+              objectId: id,
+              weight: 1,
+            })),
+          })
+        )
+        .$extend(
+          SuiStackMessagingClient.experimental_asClientExtension({
+            storage: (client) =>
+              new WalrusStorageAdapter(client, {
+                publisher: 'https://publisher.walrus-testnet.walrus.space',
+                aggregator: 'https://aggregator.testnet.walrus.mirai.cloud',
+                epochs: 10,
+              }),
+            sessionKey,
+          })
+        );
 
     return extendedClient.messaging;
   } catch (error) {
