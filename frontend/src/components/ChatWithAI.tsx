@@ -56,7 +56,7 @@ export function ChatWithAI() {
     if (existingChannelId) {
       trackEvent(AnalyticsEvents.CHANNEL_OPENED, {
         channel_id: existingChannelId,
-        is_ai_bot: true,
+        is_ai_bot: "true",
       });
       window.location.hash = existingChannelId;
       return;
@@ -68,7 +68,7 @@ export function ChatWithAI() {
     if (result?.channelId) {
       trackEvent(AnalyticsEvents.CHANNEL_CREATED, {
         channel_id: result.channelId,
-        is_ai_bot: true,
+        is_ai_bot: "true",
       });
       // Navigate to the newly created channel
       window.location.hash = result.channelId;
