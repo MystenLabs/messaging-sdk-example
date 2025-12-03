@@ -33,6 +33,13 @@ export class MessageIndexer {
   }
 
   /**
+   * Update the messaging client (used when session key is renewed)
+   */
+  updateMessagingClient(messagingClient: SuiStackMessagingClient): void {
+    this.messagingClient = messagingClient;
+  }
+
+  /**
    * Get initial cursor to start from (skips historical messages)
    */
   async getInitialCursor(): Promise<SuiEventsCursor> {

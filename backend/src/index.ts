@@ -3,6 +3,9 @@ import 'dotenv/config';
 
 import http from 'http';
 import { SuiClient } from '@mysten/sui/client';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { SessionKey } from '@mysten/seal';
+import { SuiStackMessagingClient } from '@mysten/messaging';
 import { createBotKeypair, getBotAddress } from './botWallet.js';
 import { getOrCreateSessionKey } from './sessionKey.js';
 import { createMessagingClient } from './messagingClient.js';
@@ -17,6 +20,48 @@ let isRunning = true;
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Check if session key needs renewal and renew if necessary
+ * Returns true if renewal occurred, false otherwise
+ */
+async function checkAndRenewSessionKey(
+  currentSessionKey: SessionKey,
+  suiClient: SuiClient,
+  keypair: Ed25519Keypair,
+  botAddress: string,
+  messageIndexer: MessageIndexer,
+  messageSender: MessageSender
+): Promise<{ sessionKey: SessionKey; messagingClient: SuiStackMessagingClient; renewed: boolean }> {
+  // Check if session key is expired or about to expire
+  if (currentSessionKey.isExpired()) {
+    console.log('🔄 Session key expired, renewing...');
+
+    // Create new session key
+    const newSessionKey = await getOrCreateSessionKey(suiClient, keypair, botAddress);
+
+    // Create new messaging client with new session key
+    const newMessagingClient = createMessagingClient(newSessionKey);
+
+    // Update both indexer and sender with new client
+    messageIndexer.updateMessagingClient(newMessagingClient);
+    messageSender.updateMessagingClient(newMessagingClient);
+
+    console.log('✅ Session key renewed successfully');
+
+    return {
+      sessionKey: newSessionKey,
+      messagingClient: newMessagingClient,
+      renewed: true
+    };
+  }
+
+  return {
+    sessionKey: currentSessionKey,
+    messagingClient: createMessagingClient(currentSessionKey),
+    renewed: false
+  };
 }
 
 async function initializeBot() {
@@ -65,8 +110,16 @@ async function initializeBot() {
 
     console.log('✅ Bot initialization complete\n');
 
-    // Start polling loop
-    await pollLoop(messageIndexer, aiService, messageSender);
+    // Start polling loop with session key tracking
+    await pollLoop(
+      messageIndexer,
+      aiService,
+      messageSender,
+      suiClient,
+      keypair,
+      botAddress,
+      sessionKey
+    );
   } catch (error) {
     console.error('❌ Failed to initialize bot:', error);
     process.exit(1);
@@ -76,7 +129,11 @@ async function initializeBot() {
 async function pollLoop(
   indexer: MessageIndexer,
   aiService: LLMService,
-  messageSender: MessageSender
+  messageSender: MessageSender,
+  suiClient: SuiClient,
+  keypair: Ed25519Keypair,
+  botAddress: string,
+  initialSessionKey: SessionKey
 ): Promise<void> {
   console.log('🚀 Starting message polling loop...');
 
@@ -84,8 +141,26 @@ async function pollLoop(
   let lastCursor = await indexer.getInitialCursor();
   console.log('⏭️  Starting from latest cursor (skipping historical messages)\n');
 
+  // Track current session key
+  let currentSessionKey = initialSessionKey;
+
   while (isRunning) {
     try {
+      // Check and renew session key if needed
+      const renewalResult = await checkAndRenewSessionKey(
+        currentSessionKey,
+        suiClient,
+        keypair,
+        botAddress,
+        indexer,
+        messageSender
+      );
+
+      // Update session key reference if renewed
+      if (renewalResult.renewed) {
+        currentSessionKey = renewalResult.sessionKey;
+      }
+
       const { messages, nextCursor } = await indexer.getMessagesSince(lastCursor);
 
       if (messages.length > 0) {

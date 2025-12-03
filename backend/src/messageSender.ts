@@ -22,6 +22,13 @@ export class MessageSender {
   }
 
   /**
+   * Update the messaging client (used when session key is renewed)
+   */
+  updateMessagingClient(messagingClient: SuiStackMessagingClient): void {
+    this.messagingClient = messagingClient;
+  }
+
+  /**
    * Send a message to a channel
    * @param channelId The channel ID to send the message to
    * @param messageText The message text to send
