@@ -7,6 +7,7 @@ import { MessagingClientProvider } from "./providers/MessagingClientProvider";
 import { CreateChannel } from "./components/CreateChannel";
 import { ChannelList } from "./components/ChannelList";
 import { Channel } from "./components/Channel";
+import { ChatWithAI } from "./components/ChatWithAI";
 import { useState, useEffect } from "react";
 import { isValidSuiObjectId } from "@mysten/sui/utils";
 import { MessagingStatus } from "./components/MessagingStatus";
@@ -116,6 +117,7 @@ function AppContent() {
             ) : (
               <Flex direction="column" gap="4">
                 <MessagingStatus />
+                <ChatWithAI />
                 <CreateChannel />
                 <ChannelList />
               </Flex>
