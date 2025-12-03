@@ -1,12 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
-import { Card, Flex, Text, Box, Button, TextField, Badge, IconButton } from '@radix-ui/themes';
-import { FileIcon, Cross2Icon } from '@radix-ui/react-icons';
+import { Card, Flex, Text, Box, Button, TextField, Badge } from '@radix-ui/themes';
 import { useMessaging } from '../hooks/useMessaging';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { formatTimestamp, formatAddress } from '../utils/formatters';
 import { trackEvent, trackError, AnalyticsEvents } from '../utils/analytics';
-import { AttachmentDisplay } from './AttachmentDisplay';
-import { formatFileSize, getFileIcon } from '../utils/attachments';
 import { useSessionKey } from '../providers/SessionKeyProvider';
 import { SessionExpirationModal } from './SessionExpirationModal';
 
@@ -35,8 +32,6 @@ export function Channel({ channelId, onBack }: ChannelProps) {
   } = useMessaging();
 
   const [messageText, setMessageText] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
 
   // Check session expiration
@@ -135,20 +130,17 @@ export function Channel({ channelId, onBack }: ChannelProps) {
       return;
     }
 
-    if ((!messageText.trim() && selectedFiles.length === 0) || isSendingMessage) {
+    if (!messageText.trim() || isSendingMessage) {
       return;
     }
 
-    const attachments = selectedFiles.length > 0 ? selectedFiles : undefined;
-    const result = await sendMessage(messageText, attachments);
+    const result = await sendMessage(messageText);
     if (result) {
       setMessageText(''); // Clear input on success
-      setSelectedFiles([]); // Clear selected files
       // Track successful message send
       trackEvent(AnalyticsEvents.MESSAGE_SENT, {
         channel_id: channelId,
         message_length: messageText.length,
-        has_attachments: attachments ? attachments.length : 0,
       });
     } else if (channelError) {
       // Track message sending error
@@ -156,21 +148,6 @@ export function Channel({ channelId, onBack }: ChannelProps) {
         channel_id: channelId,
       });
     }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setSelectedFiles(prev => [...prev, ...files]);
-    }
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleLoadMore = () => {
@@ -284,13 +261,6 @@ export function Channel({ channelId, onBack }: ChannelProps) {
                         {isOwnMessage ? 'You' : formatAddress(message.sender)}
                       </Text>
                       {message.text && <Text size="2">{message.text}</Text>}
-                      {message.attachments && message.attachments.length > 0 && (
-                        <Flex direction="column" gap="1" mt={message.text ? "2" : "0"}>
-                          {message.attachments.map((attachment, attIndex) => (
-                            <AttachmentDisplay key={attIndex} attachment={attachment} />
-                          ))}
-                        </Flex>
-                      )}
                       <Text size="1" color="gray">
                         {formatTimestamp(message.createdAtMs)}
                       </Text>
@@ -323,56 +293,8 @@ export function Channel({ channelId, onBack }: ChannelProps) {
 
       {/* Message Input */}
       <Box p="3" style={{ borderTop: '1px solid var(--gray-a3)' }}>
-        {/* Selected Files Preview */}
-        {selectedFiles.length > 0 && (
-          <Box mb="2" p="2" style={{ backgroundColor: 'var(--gray-a2)', borderRadius: 'var(--radius-2)' }}>
-            <Flex direction="column" gap="1">
-              {selectedFiles.map((file, index) => (
-                <Flex key={index} gap="2" align="center" justify="between">
-                  <Flex gap="2" align="center" style={{ flex: 1, minWidth: 0 }}>
-                    <Text size="3">{getFileIcon(file.type, file.name)}</Text>
-                    <Box style={{ flex: 1, minWidth: 0 }}>
-                      <Text size="2" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {file.name}
-                      </Text>
-                      <Text size="1" color="gray">
-                        {formatFileSize(file.size)}
-                      </Text>
-                    </Box>
-                  </Flex>
-                  <IconButton
-                    size="1"
-                    variant="ghost"
-                    onClick={() => handleRemoveFile(index)}
-                    style={{ flexShrink: 0 }}
-                  >
-                    <Cross2Icon />
-                  </IconButton>
-                </Flex>
-              ))}
-            </Flex>
-          </Box>
-        )}
-
         <form onSubmit={handleSendMessage}>
           <Flex gap="2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-              disabled={isSendingMessage || !isReady || isSessionExpired}
-            />
-            <IconButton
-              size="3"
-              variant="soft"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isSendingMessage || !isReady || isSessionExpired}
-            >
-              <FileIcon />
-            </IconButton>
             <TextField.Root
               size="3"
               placeholder="Type a message..."
@@ -384,7 +306,7 @@ export function Channel({ channelId, onBack }: ChannelProps) {
             <Button
               size="3"
               type="submit"
-              disabled={(!messageText.trim() && selectedFiles.length === 0) || isSendingMessage || !isReady || isSessionExpired}
+              disabled={!messageText.trim() || isSendingMessage || !isReady || isSessionExpired}
             >
               {isSendingMessage ? 'Sending...' : 'Send'}
             </Button>
