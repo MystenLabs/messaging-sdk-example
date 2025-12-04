@@ -3,6 +3,7 @@ import { useMessaging } from '../hooks/useMessaging';
 import { useEffect } from 'react';
 import { formatTimestamp, formatAddress } from '../utils/formatters';
 import { trackEvent, AnalyticsEvents } from '../utils/analytics';
+import { AddressDisplay } from './AddressDisplay';
 
 export function ChannelList() {
   const { channels, isFetchingChannels, fetchChannels, isReady, hasMoreChannels } = useMessaging();
@@ -139,7 +140,7 @@ export function ChannelList() {
                         </Text>
                         <Flex gap="2" align="center">
                           <Text size="1" color="gray">
-                            from: {formatAddress(channel.last_message.sender)}
+                            from: <AddressDisplay address={channel.last_message.sender} />
                           </Text>
                           <Text size="1" color="gray">
                             • {formatTimestamp(channel.last_message?.createdAtMs)}

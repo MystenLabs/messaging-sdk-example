@@ -6,6 +6,7 @@ import { formatTimestamp, formatAddress } from '../utils/formatters';
 import { trackEvent, trackError, AnalyticsEvents } from '../utils/analytics';
 import { useSessionKey } from '../providers/SessionKeyProvider';
 import { SessionExpirationModal } from './SessionExpirationModal';
+import { AddressDisplay } from './AddressDisplay';
 
 interface ChannelProps {
   channelId: string;
@@ -258,7 +259,7 @@ export function Channel({ channelId, onBack }: ChannelProps) {
                   >
                     <Flex direction="column" gap="1">
                       <Text size="1" color="gray">
-                        {isOwnMessage ? 'You' : formatAddress(message.sender)}
+                        {isOwnMessage ? 'You' : <AddressDisplay address={message.sender} />}
                       </Text>
                       {message.text && <Text size="2">{message.text}</Text>}
                       <Text size="1" color="gray">
