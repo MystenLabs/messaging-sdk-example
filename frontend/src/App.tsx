@@ -10,21 +10,24 @@ import { Channel } from "./components/Channel";
 import { ChatWithAI } from "./components/ChatWithAI";
 import { useState, useEffect } from "react";
 import { isValidSuiObjectId } from "@mysten/sui/utils";
-import { MessagingStatus } from "./components/MessagingStatus";
 import { trackEvent, AnalyticsEvents } from "./utils/analytics";
 import CreateUsernameModal from "./components/createUsernameModal";
 import { useUserSubname } from "./hooks/useUserSubname";
 import { ProfileDropdown } from "./components/ProfileDropdown";
+import { SessionExpirationModal } from "./components/SessionExpirationModal";
+import { useSessionKey } from "./providers/SessionKeyProvider";
 
 function AppContent() {
   const currentAccount = useCurrentAccount();
   const { hasSubname, isLoading: isSubnameLoading } = useUserSubname();
+  const { sessionKey, isInitializing } = useSessionKey();
   const [prevAccount, setPrevAccount] = useState(currentAccount);
   const [channelId, setChannelId] = useState<string | null>(() => {
     const hash = window.location.hash.slice(1);
     return isValidSuiObjectId(hash) ? hash : null;
   });
   const [shouldCreateUsername, setShouldCreateUsername] = useState(false);
+  const [shouldShowSessionModal, setShouldShowSessionModal] = useState(false);
 
   // Track wallet connection changes
   useEffect(() => {
@@ -45,6 +48,16 @@ function AppContent() {
     }
   }, [currentAccount, hasSubname, isSubnameLoading])
 
+  // Show session modal if user has subname but no session or expired session
+  useEffect(() => {
+    if (currentAccount && !isSubnameLoading && hasSubname && !isInitializing) {
+      const needsSession = !sessionKey || sessionKey.isExpired();
+      setShouldShowSessionModal(needsSession);
+    } else {
+      setShouldShowSessionModal(false);
+    }
+  }, [currentAccount, hasSubname, isSubnameLoading, sessionKey, isInitializing])
+
   // Listen for hash changes
   useEffect(() => {
     const handleHashChange = () => {
@@ -56,9 +69,13 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Check if user is ready (has both subname and active session)
+  const isUserReady = hasSubname && sessionKey && !sessionKey.isExpired();
+
   return (
     <>
       <CreateUsernameModal isOpen={shouldCreateUsername} onClose={() => setShouldCreateUsername(false)} />
+      <SessionExpirationModal isOpen={shouldShowSessionModal} />
       <Flex
         position="sticky"
         px="4"
@@ -119,24 +136,25 @@ function AppContent() {
           px="4"
         >
           {currentAccount ? (
-            channelId ? (
-              <Channel
-                channelId={channelId}
-                onBack={() => {
-                  window.location.hash = '';
-                  setChannelId(null);
-                }}
-              />
-            ) : (
-              <Flex direction="column" gap="4">
-                <MessagingStatus />
-                <ChatWithAI />
-                <CreateChannel />
-                <ChannelList />
-              </Flex>
-            )
+            isUserReady ? (
+              channelId ? (
+                <Channel
+                  channelId={channelId}
+                  onBack={() => {
+                    window.location.hash = '';
+                    setChannelId(null);
+                  }}
+                />
+              ) : (
+                <Flex direction="column" gap="4">
+                  <ChatWithAI />
+                  <CreateChannel />
+                  <ChannelList />
+                </Flex>
+              )
+            ) : null
           ) : (
-            <Heading>Please connect your wallet</Heading>
+            <Heading>Please sign in</Heading>
           )}
         </Container>
       </Container>
