@@ -1,5 +1,5 @@
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Box, Container, Flex, Heading, Button, IconButton } from "@radix-ui/themes";
+import { Box, Container, Flex, Heading, IconButton } from "@radix-ui/themes";
 import { GitHubLogoIcon, DiscordLogoIcon } from "@radix-ui/react-icons";
 import { SessionKeyProvider } from "./providers/SessionKeyProvider";
 import { MessagingClientProvider } from "./providers/MessagingClientProvider";

@@ -1,7 +1,7 @@
 import { Card, Flex, Text, Box, Separator, Badge, Button } from '@radix-ui/themes';
 import { useMessaging } from '../hooks/useMessaging';
 import { useEffect } from 'react';
-import { formatTimestamp, formatAddress } from '../utils/formatters';
+import { formatTimestamp } from '../utils/formatters';
 import { trackEvent, AnalyticsEvents } from '../utils/analytics';
 import { AddressDisplay } from './AddressDisplay';
 

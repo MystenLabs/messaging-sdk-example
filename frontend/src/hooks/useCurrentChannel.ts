@@ -248,7 +248,7 @@ export const useCurrentChannel = () => {
    *   console.log('Message sent:', result.digest);
    * }
    */
-  const sendMessage = useCallback(async (message: string, attachments?: File[]) => {
+  const sendMessage = useCallback(async (message: string) => {
     if (!messagingClient || !currentAccount || !currentChannel) {
       setMessageError('[sendMessage] Messaging client, account, or channel not available');
       return null;
