@@ -8,7 +8,8 @@ interface SessionExpirationModalProps {
 export function SessionExpirationModal({ isOpen }: SessionExpirationModalProps) {
   const { initializeManually, isInitializing } = useSessionKey();
 
-  if (!isOpen) {
+  // Keep modal open while initializing to prevent flash/pause
+  if (!isOpen && !isInitializing) {
     return null;
   }
 
