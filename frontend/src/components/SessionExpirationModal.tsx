@@ -40,11 +40,11 @@ export function SessionExpirationModal({ isOpen }: SessionExpirationModalProps) 
         >
           <Flex direction="column" gap="4" p="4">
             <Heading size="5" weight="bold">
-              Session Expired
+              Start New Session
             </Heading>
 
             <Text size="3">
-              Your session key has expired. The SDK uses Seal for encrypting messages and attachments. 
+              The SDK uses Seal for encrypting messages and attachments. 
               The Seal SDK requires a session key, which contains a signature from your account and allows 
               the app to retrieve Seal decryption keys for a limited time (30 minutes) without requiring 
               repeated confirmations for each message.
