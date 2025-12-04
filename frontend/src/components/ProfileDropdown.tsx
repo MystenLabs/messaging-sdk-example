@@ -34,7 +34,17 @@ export function ProfileDropdown() {
   }
 
   return (
-    <DropdownMenu.Root>
+    <>
+      <style>
+        {`
+          @media (min-width: 768px) {
+            .profile-subname, .profile-chevron {
+              display: inline-block !important;
+            }
+          }
+        `}
+      </style>
+      <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         <Button size="3" variant="soft" style={{ cursor: "pointer" }}>
           <Flex align="center" gap="2">
@@ -44,8 +54,12 @@ export function ProfileDropdown() {
               radius="full"
               style={{ width: "24px", height: "24px" }}
             />
-            {!isLoading && subname && <span>{subname}</span>}
-            <ChevronDownIcon />
+            {!isLoading && subname && (
+              <span style={{ display: "none" }} className="profile-subname">
+                {subname}
+              </span>
+            )}
+            <ChevronDownIcon className="profile-chevron" style={{ display: "none" }} />
           </Flex>
         </Button>
       </DropdownMenu.Trigger>
@@ -68,5 +82,6 @@ export function ProfileDropdown() {
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
+    </>
   );
 }
