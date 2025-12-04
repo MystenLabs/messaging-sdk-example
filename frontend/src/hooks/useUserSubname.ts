@@ -36,13 +36,14 @@ async function fetchUserSubnames(address: string): Promise<SubnamesResponse> {
   return data.data;
 }
 
-export const useUserSubname = () => {
+export const useUserSubname = (targetAddress?: string) => {
   const currentAccount = useCurrentAccount();
+  const address = targetAddress || currentAccount?.address;
 
   const query = useQuery({
-    queryKey: ['subnames', currentAccount?.address],
-    queryFn: () => fetchUserSubnames(currentAccount!.address),
-    enabled: !!currentAccount?.address,
+    queryKey: ['subnames', address],
+    queryFn: () => fetchUserSubnames(address!),
+    enabled: !!address,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
