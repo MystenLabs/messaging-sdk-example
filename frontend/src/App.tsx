@@ -1,4 +1,4 @@
-import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Box, Container, Flex, Heading, Button, IconButton } from "@radix-ui/themes";
 import { GitHubLogoIcon, DiscordLogoIcon } from "@radix-ui/react-icons";
 import { SessionKeyProvider } from "./providers/SessionKeyProvider";
@@ -12,14 +12,19 @@ import { useState, useEffect } from "react";
 import { isValidSuiObjectId } from "@mysten/sui/utils";
 import { MessagingStatus } from "./components/MessagingStatus";
 import { trackEvent, AnalyticsEvents } from "./utils/analytics";
+import CreateUsernameModal from "./components/createUsernameModal";
+import { useUserSubname } from "./hooks/useUserSubname";
+import { ProfileDropdown } from "./components/ProfileDropdown";
 
 function AppContent() {
   const currentAccount = useCurrentAccount();
+  const { hasSubname, isLoading: isSubnameLoading } = useUserSubname();
   const [prevAccount, setPrevAccount] = useState(currentAccount);
   const [channelId, setChannelId] = useState<string | null>(() => {
     const hash = window.location.hash.slice(1);
     return isValidSuiObjectId(hash) ? hash : null;
   });
+  const [shouldCreateUsername, setShouldCreateUsername] = useState(false);
 
   // Track wallet connection changes
   useEffect(() => {
@@ -32,6 +37,13 @@ function AppContent() {
     }
     setPrevAccount(currentAccount);
   }, [currentAccount, prevAccount]);
+
+  // Show username modal if user has no subnames
+  useEffect(() => {
+    if (currentAccount && !isSubnameLoading && !hasSubname) {
+      setShouldCreateUsername(true);
+    }
+  }, [currentAccount, hasSubname, isSubnameLoading])
 
   // Listen for hash changes
   useEffect(() => {
@@ -46,6 +58,7 @@ function AppContent() {
 
   return (
     <>
+      <CreateUsernameModal isOpen={shouldCreateUsername} onClose={() => setShouldCreateUsername(false)} />
       <Flex
         position="sticky"
         px="4"
@@ -95,7 +108,7 @@ function AppContent() {
                 Get Testnet SUI
               </Button>
             )}
-            <ConnectButton />
+            <ProfileDropdown />
           </Flex>
         </Box>
       </Flex>
