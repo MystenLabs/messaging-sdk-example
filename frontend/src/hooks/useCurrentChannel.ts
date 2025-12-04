@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
 import { useMessagingClient } from '../providers/MessagingClientProvider';
-import { useSignAndExecuteTransaction, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { DecryptedChannelObject, DecryptMessageResult, ChannelMessagesDecryptedRequest, PollingState } from '@mysten/messaging';
 import { useChannelMembership } from './useChannelMembership';
+import { useSponsoredTransaction } from './useSponsoredTransaction';
 
 /**
  * Hook for managing the current channel, messages, and message operations.
@@ -11,7 +12,7 @@ import { useChannelMembership } from './useChannelMembership';
  */
 export const useCurrentChannel = () => {
   const messagingClient = useMessagingClient();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const { sponsorAndExecuteTransaction } = useSponsoredTransaction();
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const { getMemberCapForChannel } = useChannelMembership();
@@ -271,7 +272,11 @@ export const useCurrentChannel = () => {
         throw new Error('No encrypted key found for channel');
       }
 
-      // Create and execute send message transaction
+      console.log('encryptedKey', encryptedKey)
+      console.log('message', message)
+      
+
+      // Create and execute send message transaction using sponsored transaction
       const tx = new Transaction();
       const sendMessageTxBuilder = await messagingClient.sendMessage(
         channelId,
@@ -279,22 +284,25 @@ export const useCurrentChannel = () => {
         currentAccount.address,
         message,
         encryptedKey,
-        attachments,
       );
       await sendMessageTxBuilder(tx);
 
-      const { digest } = await signAndExecute({ transaction: tx });
+      const result = await sponsorAndExecuteTransaction(tx);
+
+      if (!result) {
+        throw new Error('Failed to execute sponsored transaction');
+      }
 
       // Wait for transaction
       await suiClient.waitForTransaction({
-        digest,
+        digest: result.digest,
         options: { showEffects: true },
       });
 
       // Poll for new messages (will include the sent message)
       await fetchMessages();
 
-      return { digest };
+      return { digest: result.digest };
     } catch (err) {
       const errorMsg = err instanceof Error ? `[sendMessage] ${err.message}` : '[sendMessage] Failed to send message';
       setMessageError(errorMsg);
@@ -303,7 +311,7 @@ export const useCurrentChannel = () => {
     } finally {
       setIsSendingMessage(false);
     }
-  }, [messagingClient, currentAccount, currentChannel, signAndExecute, suiClient, getMemberCapForChannel, getEncryptedKeyForChannel, fetchLatestMessages]);
+  }, [messagingClient, currentAccount, currentChannel, sponsorAndExecuteTransaction, suiClient, getMemberCapForChannel, getEncryptedKeyForChannel, fetchMessages]);
 
   return {
     // Query state

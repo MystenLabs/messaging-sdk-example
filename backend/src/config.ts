@@ -38,3 +38,12 @@ if (!OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY environment variable is required');
 }
 
+// Enoki Private API key (required for sponsored transactions)
+export const ENOKI_PRIVATE_API_KEY = process.env.ENOKI_PRIVATE_API_KEY;
+if (!ENOKI_PRIVATE_API_KEY) {
+  throw new Error('ENOKI_PRIVATE_API_KEY environment variable is required');
+}
+
+// Enoki API configuration
+export const ENOKI_API_BASE = 'https://api.enoki.mystenlabs.com/v1';
+

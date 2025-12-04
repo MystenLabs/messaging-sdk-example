@@ -1,8 +1,8 @@
-import { useCurrentAccount, useWallets } from "@mysten/dapp-kit";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Box, Card, Flex, Heading, Button, Text, TextField } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FormEvent, useEffect, useRef } from "react";
-import {AuthProvider, EnokiWallet, getSession, isEnokiWallet} from "@mysten/enoki";
+import { FormEvent } from "react";
+import { useSessionJWT } from "../hooks/useSessionJWT";
 
 interface CreateUsernameModalProps {
   isOpen: boolean;
@@ -11,13 +11,12 @@ interface CreateUsernameModalProps {
 
 export default function CreateUsernameModal({ isOpen, onClose }: CreateUsernameModalProps) {
   const currentAccount = useCurrentAccount();
-  const wallets = useWallets();
-  const jwt = useRef<string | null>(null);
+  const { jwt } = useSessionJWT();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async (username: string) => {
-      if (!jwt.current) {
+      if (!jwt) {
         throw new Error('Missing jwt');
       }
 
@@ -25,7 +24,7 @@ export default function CreateUsernameModal({ isOpen, onClose }: CreateUsernameM
         method: 'POST',
         headers: {
           Authorization: `Bearer enoki_public_4e47cb0c7a02b73409dbc2131b862590`,
-          'zklogin-jwt': jwt.current,
+          'zklogin-jwt': jwt,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -50,30 +49,6 @@ export default function CreateUsernameModal({ isOpen, onClose }: CreateUsernameM
       onClose?.();
     },
   });
-
-  useEffect(() => {
-    if (currentAccount) {
-      const enokiWallets = wallets.filter(isEnokiWallet);
-      const walletsByProvider = enokiWallets.reduce(
-        (map, wallet) => map.set(wallet.provider, wallet),
-        new Map<AuthProvider, EnokiWallet>(),
-      );
-      const googleWallet = walletsByProvider.get('google');
-
-      if (googleWallet) {
-        getSession(googleWallet)
-          .then(session => {
-            if (!session?.jwt) {
-              throw new Error('Session does not contain JWT');
-            }
-            // console.log('JWT:', JSON.stringify(decodeJwt(session.jwt), null, 2));
-            console.log('Session:', JSON.stringify(session, null, 2));
-            jwt.current = session.jwt
-          })
-          .catch(error => console.error('Error fetching session:', error));
-      }
-    }
-  }, [currentAccount, wallets]);
 
   if (!isOpen) {
     return null;

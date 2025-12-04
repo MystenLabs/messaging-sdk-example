@@ -43,6 +43,7 @@ function AppContent() {
 
   // Show username modal if user has no subnames
   useEffect(() => {
+    console.log('address', currentAccount?.address)
     if (currentAccount && !isSubnameLoading && !hasSubname) {
       setShouldCreateUsername(true);
     }
@@ -111,22 +112,7 @@ function AppContent() {
         </Flex>
 
         <Box>
-          <Flex gap="2" align="center">
-            {currentAccount && (
-              <Button
-                variant="soft"
-                onClick={() => {
-                  trackEvent(AnalyticsEvents.FAUCET_CLICKED, {
-                    address: currentAccount.address,
-                  });
-                  window.open(`https://faucet.sui.io/?address=${currentAccount.address}`, '_blank');
-                }}
-              >
-                Get Testnet SUI
-              </Button>
-            )}
-            <ProfileDropdown />
-          </Flex>
+          <ProfileDropdown />
         </Box>
       </Flex>
       <Container>

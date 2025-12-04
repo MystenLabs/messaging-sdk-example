@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMessagingClient } from '../providers/MessagingClientProvider';
-import { useSignAndExecuteTransaction, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { DecryptedChannelObject } from '@mysten/messaging';
 import { useChannelMembership } from './useChannelMembership';
+import { useSponsoredTransaction } from './useSponsoredTransaction';
 
 /**
  * Hook for managing channel list and channel creation.
@@ -10,7 +11,7 @@ import { useChannelMembership } from './useChannelMembership';
  */
 export const useChannelList = () => {
   const messagingClient = useMessagingClient();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const { sponsorAndExecuteTransaction } = useSponsoredTransaction();
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const { clearCache } = useChannelMembership();
@@ -127,15 +128,18 @@ export const useChannelList = () => {
         initialMemberAddresses: recipientAddresses,
       });
 
-      // Step 1: Build and execute channel creation
+      // Step 1: Build and execute channel creation using sponsored transaction
       const channelTx = flow.build();
-      const { digest } = await signAndExecute({
-        transaction: channelTx,
-      });
+      console.log('channelTx', channelTx)
+      const result = await sponsorAndExecuteTransaction(channelTx);
+
+      if (!result) {
+        throw new Error('Failed to execute channel creation transaction');
+      }
 
       // Wait for transaction and get channel ID
       const { objectChanges } = await suiClient.waitForTransaction({
-        digest,
+        digest: result.digest,
         options: { showObjectChanges: true },
       });
 
@@ -146,20 +150,22 @@ export const useChannelList = () => {
       const channelId = (createdChannel as any)?.objectId;
 
       // Step 2: Get generated caps
-      const { creatorMemberCap } = await flow.getGeneratedCaps({ digest });
+      const { creatorMemberCap } = await flow.getGeneratedCaps({ digest: result.digest });
 
-      // Step 3: Generate and attach encryption key
+      // Step 3: Generate and attach encryption key using sponsored transaction
       const attachKeyTx = await flow.generateAndAttachEncryptionKey({
         creatorMemberCap,
       });
 
-      const { digest: finalDigest } = await signAndExecute({
-        transaction: attachKeyTx,
-      });
+      const finalResult = await sponsorAndExecuteTransaction(attachKeyTx);
+
+      if (!finalResult) {
+        throw new Error('Failed to execute attach key transaction');
+      }
 
       // Wait for final transaction
       const { effects } = await suiClient.waitForTransaction({
-        digest: finalDigest,
+        digest: finalResult.digest,
         options: { showEffects: true },
       });
 
@@ -179,7 +185,7 @@ export const useChannelList = () => {
     } finally {
       setIsCreatingChannel(false);
     }
-  }, [messagingClient, currentAccount, signAndExecute, suiClient, fetchChannels]);
+  }, [messagingClient, currentAccount, sponsorAndExecuteTransaction, suiClient, fetchChannels]);
 
   // Fetch channels when client is ready (initial fetch only)
   useEffect(() => {

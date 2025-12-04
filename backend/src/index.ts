@@ -13,6 +13,7 @@ import { MessageIndexer } from './eventIndexer.js';
 import { LLMService } from './llmService.js';
 import { MessageSender } from './messageSender.js';
 import { SUI_RPC_URL, POLLING_INTERVAL_MS } from './config.js';
+import { handleSponsorTransaction, handleSponsorTransactionFinalize } from './api.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -192,10 +193,36 @@ async function pollLoop(
 }
 
 const server = http.createServer((req, res) => {
+  // Enable CORS for all requests
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, zklogin-jwt');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
   // Health check endpoint
   if (req.url === '/health' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+    return;
+  }
+
+  // API: POST /api/sponsor-transaction
+  if (req.url === '/api/sponsor-transaction' && req.method === 'POST') {
+    handleSponsorTransaction(req, res);
+    return;
+  }
+
+  // API: POST /api/sponsor-transaction/:digest
+  const sponsorFinalizeMatch = req.url?.match(/^\/api\/sponsor-transaction\/([^\/]+)$/);
+  if (sponsorFinalizeMatch && req.method === 'POST') {
+    const digest = sponsorFinalizeMatch[1];
+    handleSponsorTransactionFinalize(req, res, digest);
     return;
   }
 

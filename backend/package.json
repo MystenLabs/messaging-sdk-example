@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@mysten/bcs": "^1.9.2",
+    "@mysten/enoki": "^0.12.10",
     "@mysten/messaging": "^0.0.3",
     "@mysten/seal": "^0.9.3",
     "@mysten/sui": "^1.44.0",
