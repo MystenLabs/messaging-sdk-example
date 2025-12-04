@@ -8,6 +8,7 @@ import { CreateChannel } from "./components/CreateChannel";
 import { ChannelList } from "./components/ChannelList";
 import { Channel } from "./components/Channel";
 import { ChatWithAI } from "./components/ChatWithAI";
+import { LoggedOutView } from "./components/LoggedOutView";
 import { useState, useEffect } from "react";
 import { isValidSuiObjectId } from "@mysten/sui/utils";
 import { trackEvent, AnalyticsEvents } from "./utils/analytics";
@@ -88,7 +89,7 @@ function AppContent() {
         }}
       >
         <Flex align="center" gap="2">
-          <Heading>Messaging SDK Example</Heading>
+          <Heading>Sui Messenger</Heading>
           <IconButton
             size="2"
             variant="ghost"
@@ -140,7 +141,7 @@ function AppContent() {
               )
             ) : null
           ) : (
-            <Heading>Please sign in</Heading>
+            <LoggedOutView />
           )}
         </Container>
       </Container>
