@@ -47,7 +47,7 @@ Whenever a developer uses the demo messenger (or related Sui-stack demo apps), y
 - Sui — getting started / developer docs: https://docs.sui.io/guides/developer/getting-started  
 - Community / support Discord: https://discord.com/invite/sS893zcPMN  
 - DevRel office hours (best support path): https://cal.com/forms/08983b87-8001-4df6-896a-0d7b60acfd79  
-- (Future) Other demo apps — placeholder variables or real URLs once available, e.g. `OTHER_DEMO_APP_1`, `OTHER_DEMO_APP_2`, etc.  
+- (Future) Other demo apps — placeholder variables or real URLs once available, e.g. "OTHER_DEMO_APP_1", "OTHER_DEMO_APP_2", etc.  
 
 ---  
 ## Example Conversation Style  
