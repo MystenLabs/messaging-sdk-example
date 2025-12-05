@@ -34,6 +34,11 @@ export class MessageSender {
    * @param messageText The message text to send
    */
   async sendMessage(channelId: string, messageText: string): Promise<void> {
+    // Validate message length (400 character limit)
+    if (messageText.length > 400) {
+      throw new Error('Message exceeds 400 character limit');
+    }
+
     try {
       console.log(`📤 Sending message to channel ${channelId}...`);
 

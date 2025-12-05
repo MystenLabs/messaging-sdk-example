@@ -135,6 +135,11 @@ export function Channel({ channelId, onBack }: ChannelProps) {
       return;
     }
 
+    // Validate message length (400 character limit)
+    if (messageText.length > 400) {
+      return;
+    }
+
     const result = await sendMessage(messageText);
     if (result) {
       setMessageText(''); // Clear input on success
@@ -295,22 +300,28 @@ export function Channel({ channelId, onBack }: ChannelProps) {
       {/* Message Input */}
       <Box p="3" style={{ borderTop: '1px solid var(--gray-a3)' }}>
         <form onSubmit={handleSendMessage}>
-          <Flex gap="2">
-            <TextField.Root
-              size="3"
-              placeholder="Type a message..."
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              disabled={isSendingMessage || !isReady || isSessionExpired}
-              style={{ flex: 1 }}
-            />
-            <Button
-              size="3"
-              type="submit"
-              disabled={!messageText.trim() || isSendingMessage || !isReady || isSessionExpired}
-            >
-              {isSendingMessage ? 'Sending...' : 'Send'}
-            </Button>
+          <Flex direction="column" gap="2">
+            <Flex gap="2">
+              <TextField.Root
+                size="3"
+                placeholder="Type a message..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                disabled={isSendingMessage || !isReady || isSessionExpired}
+                maxLength={400}
+                style={{ flex: 1 }}
+              />
+              <Button
+                size="3"
+                type="submit"
+                disabled={!messageText.trim() || isSendingMessage || !isReady || isSessionExpired}
+              >
+                {isSendingMessage ? 'Sending...' : 'Send'}
+              </Button>
+            </Flex>
+            <Text size="1" color={messageText.length > 400 ? 'red' : 'gray'}>
+              {messageText.length}/400 characters
+            </Text>
           </Flex>
         </form>
       </Box>
